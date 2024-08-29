@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Board Game Catalog'),
+        title: Text('Game Gallery'),
       ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -96,7 +96,7 @@ class Home extends StatelessWidget{
   
   Widget build(BuildContext context){
     
-    return FilteredGameListScreen(onlyLiked: true,);
+    return FilteredGameListScreen(onlyLiked: true, title: 'My Games',);
   }
 }
 
@@ -174,6 +174,8 @@ class FilteredGameListScreen extends StatefulWidget {
    int maxDurationLimit;
    String publisher;
    bool onlyLiked;
+   String title;
+
 
   FilteredGameListScreen({
     super.key,
@@ -185,6 +187,7 @@ class FilteredGameListScreen extends StatefulWidget {
     this.maxDurationLimit = -1,
     this.publisher = 'Unspecified',
     this.onlyLiked = false,
+    this.title = 'All Games'
   });
 
   @override
@@ -196,6 +199,7 @@ class _FilteredGameListScreenState extends State<FilteredGameListScreen> {
   List<Map<String, dynamic>> _allFilteredGames = [];
   List<Map<String, dynamic>> _searchFilteredGames = [];
   bool _isLoading = true;
+  bool _showFilters = false;
 
   @override
   void initState() {
@@ -297,162 +301,191 @@ void _filterGames() {
 
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Board Games'),
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(120.0),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search games...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+@override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+          
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(_showFilters ? 220.0 : 100.0),  // Adjust based on whether filters are shown
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search games...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      prefixIcon: Icon(Icons.search),
+                    ),
                   ),
-                  prefixIcon: Icon(Icons.search),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Filters'),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _showFilters = !_showFilters;
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            Text(_showFilters ? 'Hide Filters' : 'Show Filters'),
+                            Icon(_showFilters ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_showFilters)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Min Players',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.minPlayersLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Max Players',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.maxPlayersLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Min Age',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.minAgeLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Max Age',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.maxAgeLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Min Duration (mins)',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.minDurationLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: 'Max Duration (mins)',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    widget.maxDurationLimit = int.tryParse(value) ?? -1;
+                                  });
+                                  _filterGames();
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min Players',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.minPlayersLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Max Players',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.maxPlayersLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min Age',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.minAgeLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Max Age',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.maxAgeLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min Duration (mins)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.minDurationLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Max Duration (mins)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          widget.maxDurationLimit = int.tryParse(value) ?? -1;
-                        });
-                        _filterGames();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
-    ),
-    body: _isLoading
-        ? Center(child: CircularProgressIndicator())
-        : (_searchFilteredGames.isEmpty
-            ? Center(child: Text('No games found'))
-            : ListView.builder(
-                itemCount: _searchFilteredGames.length,
-                itemBuilder: (context, index) {
-                  var game = _searchFilteredGames[index];
-                  return GameInstance(
-                    gameId: game['id'].toString(),
-                    gameName: game['name'],
-                    minPlayers: game['min_players'],
-                    maxPlayers: game['max_players'],
-                    minAge: game['min_age'],
-                    maxAge: game['max_age'],
-                    minDuration: game['min_duration'],
-                    maxDuration: game['max_duration'],
-                    publisher: game['publisher_name'],
-                  );
-                },
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : (_searchFilteredGames.isEmpty
+              ? Center(child: Text('No games found'))
+              : Expanded(
+                child: ListView.builder(
+                    itemCount: _searchFilteredGames.length,
+                    itemBuilder: (context, index) {
+                      var game = _searchFilteredGames[index];
+                      return GameInstance(
+                        gameId: game['id'].toString(),
+                        gameName: game['name'],
+                        minPlayers: game['min_players'],
+                        maxPlayers: game['max_players'],
+                        minAge: game['min_age'],
+                        maxAge: game['max_age'],
+                        minDuration: game['min_duration'],
+                        maxDuration: game['max_duration'],
+                        publisher: game['publisher_name'],
+                      );
+                    },
+                  ),
               )),
-  );
-}
+    );
+  }
 
 }
 
@@ -495,14 +528,21 @@ class GameInstance extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GameDetails(gameName: gameName),
+          Row(
+            children: [
+              GameDetails(gameName: gameName),
+              Spacer(),
+              LikeButton(gameId: gameId)
+            ],
+          ),
           Row(
             children: [
               PlayerRangeWidget(minPlayers: minPlayers, maxPlayers: maxPlayers),
               SizedBox(width: 10),
               AgeRangeWidget(minAge: minAge, maxAge: maxAge),
               SizedBox(width: 10),
-              LikeButton(gameId: gameId),
+              DurationWidget(minDuration: minDuration, maxDuration: maxDuration),
+              
             ],
           ),
         ],
@@ -560,8 +600,7 @@ class AgeRangeWidget extends StatelessWidget {
   final int minAge;
   final int maxAge;
 
-  const AgeRangeWidget({Key? key, required this.minAge, required this.maxAge})
-      : super(key: key);
+  const AgeRangeWidget({super.key, required this.minAge, required this.maxAge});
 
   @override
   Widget build(BuildContext context) {
@@ -584,11 +623,38 @@ class AgeRangeWidget extends StatelessWidget {
     );
   }
 }
+class DurationWidget extends StatelessWidget {
+  final int minDuration;
+  final int maxDuration;
+
+  const DurationWidget({super.key, required this.minDuration, required this.maxDuration});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            Icon(Icons.timer_outlined),
+            SizedBox(width: 5),
+            Text(
+              '$minDuration - $maxDuration',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class LikeButton extends StatefulWidget {
   final String gameId;
 
-  const LikeButton({Key? key, required this.gameId}) : super(key: key);
+  const LikeButton({super.key, required this.gameId});
 
   @override
   _LikeButtonState createState() => _LikeButtonState();
