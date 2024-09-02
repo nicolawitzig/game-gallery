@@ -112,7 +112,7 @@ class Add extends StatelessWidget{
   
   Widget build(BuildContext context){
     
-    return GameListScreen();
+    return AddGameInstance();
   }
 }
 
@@ -479,7 +479,7 @@ void _filterGames() {
                         maxAge: game['max_age'],
                         minDuration: game['min_duration'],
                         maxDuration: game['max_duration'],
-                        publisher: game['publisher_name'],
+                        publisher: 'unspecified',
                       );
                     },
                   ),
@@ -688,6 +688,342 @@ class _LikeButtonState extends State<LikeButton> {
       icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border),
       color: isLiked ? Colors.red : null,
       onPressed: _toggleLike,
+    );
+  }
+}
+
+class AddGameInstance extends StatefulWidget {
+  const AddGameInstance({super.key});
+
+  @override
+  _AddGameInstanceState createState() => _AddGameInstanceState();
+}
+
+class _AddGameInstanceState extends State<AddGameInstance> {
+  // Controllers for each input field
+  final TextEditingController _gameNameController = TextEditingController();
+  final TextEditingController _minPlayersController = TextEditingController();
+  final TextEditingController _maxPlayersController = TextEditingController();
+  final TextEditingController _minAgeController = TextEditingController();
+  final TextEditingController _maxAgeController = TextEditingController();
+  final TextEditingController _minDurationController = TextEditingController();
+  final TextEditingController _maxDurationController = TextEditingController();
+
+  @override
+  void dispose() {
+    // Dispose controllers when the widget is disposed
+    _gameNameController.dispose();
+    _minPlayersController.dispose();
+    _maxPlayersController.dispose();
+    _minAgeController.dispose();
+    _maxAgeController.dispose();
+    _minDurationController.dispose();
+    _maxDurationController.dispose();
+    super.dispose();
+  }
+
+  void _resetForm() {
+    _gameNameController.clear();
+    _minPlayersController.clear();
+    _maxPlayersController.clear();
+    _minAgeController.clear();
+    _maxAgeController.clear();
+    _minDurationController.clear();
+   _maxDurationController.clear();
+
+    // Trigger a rebuild of the widget
+    setState(() {});
+  }
+
+  void _addGameToDatabase() async {
+    String gameName = _gameNameController.text.trim();
+
+    if (gameName.isEmpty) {
+      // Show a simple alert if the game name is not provided
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Please provide a game name.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // Prepare the game data to be inserted into the database
+    Map<String, dynamic> newGame = {
+      'name': gameName,
+      'min_players': int.tryParse(_minPlayersController.text) ?? 0,
+      'max_players': int.tryParse(_maxPlayersController.text) ?? 0,
+      'min_age': int.tryParse(_minAgeController.text) ?? 0,
+      'max_age': int.tryParse(_maxAgeController.text) ?? 0,
+      'min_duration': int.tryParse(_minDurationController.text) ?? 0,
+      'max_duration': int.tryParse(_maxDurationController.text) ?? 0,
+    };
+
+    // Insert the game into the database
+    DatabaseHelper dbHelper = DatabaseHelper();
+    await dbHelper.insertGame(newGame);
+
+    // Reset the form by creating a new AddGameInstance
+    _resetForm();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 5,
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: GameDetailsInput(controller: _gameNameController)),
+                Spacer(),
+                ElevatedButton(
+                  onPressed: _addGameToDatabase,
+                  child: Text('Add Game'),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                PlayerRangeInput(
+                  minController: _minPlayersController,
+                  maxController: _maxPlayersController,
+                ),
+                SizedBox(width: 10),
+                AgeRangeInput(
+                  minController: _minAgeController,
+                  maxController: _maxAgeController,
+                ),
+                SizedBox(width: 10),
+                DurationInput(
+                  minController: _minDurationController,
+                  maxController: _maxDurationController,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class GameDetailsInput extends StatelessWidget {
+  final TextEditingController controller;
+
+  const GameDetailsInput({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: 'Game Name',
+          border: OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+}
+
+class PlayerRangeInput extends StatelessWidget {
+  final TextEditingController minController;
+  final TextEditingController maxController;
+
+  const PlayerRangeInput({super.key, required this.minController, required this.maxController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        elevation: 1,
+        margin: const EdgeInsets.all(8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.people),
+                  SizedBox(width: 5),
+                  Text('Players'),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: minController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Min',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    '-',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),                  
+                  SizedBox(width: 5),
+                  Expanded(
+                    child: TextField(
+                      controller: maxController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Max',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AgeRangeInput extends StatelessWidget {
+  final TextEditingController minController;
+  final TextEditingController maxController;
+
+  const AgeRangeInput({super.key, required this.minController, required this.maxController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        elevation: 1,
+        margin: const EdgeInsets.all(8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.child_care),
+                  SizedBox(width: 5),
+                  Text('Age'),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: minController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Min',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    '-',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),                  
+                  SizedBox(width: 5),
+                  Expanded(
+                    child: TextField(
+                      controller: maxController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Max',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class DurationInput extends StatelessWidget {
+  final TextEditingController minController;
+  final TextEditingController maxController;
+
+  const DurationInput({super.key, required this.minController, required this.maxController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        elevation: 1,
+        margin: const EdgeInsets.all(8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.timer_outlined),
+                  SizedBox(width: 5),
+                  Text('Duration'),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: minController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Min',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    '-',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 5),
+                  Expanded(
+                    child: TextField(
+                      controller: maxController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Max',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
