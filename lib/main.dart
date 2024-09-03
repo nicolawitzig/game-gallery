@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
 import 'favourites_manager.dart';
+import 'added_manager.dart';
 
 final FavouritesManager favouritesManager = FavouritesManager();
+
 
 Future<void> toggleFavorite(String id) async {
     if (await favouritesManager.isFavourite(id)) {
@@ -108,13 +110,41 @@ class Search extends StatelessWidget{
   }
 }
 
-class Add extends StatelessWidget{
+class Add extends StatefulWidget {
+  @override
+  State<Add> createState() => _AddState();
+}
+
+class _AddState extends State<Add> {
   
-  Widget build(BuildContext context){
-    
-    return AddGameInstance();
+  final GlobalKey<RecentlyAddedGameListScreenState> _recentlyAddedKey = GlobalKey<RecentlyAddedGameListScreenState>();
+
+  void _refreshRecentlyAddedGames() {
+    _recentlyAddedKey.currentState?.refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Add Game'),
+      ),
+      body: Column(
+        children: [
+          AddGameInstance(onGameAdded: _refreshRecentlyAddedGames),   // The form for adding a new game
+          Expanded(
+            child: RecentlyAddedGameListScreen(
+              key: _recentlyAddedKey,  // Assign the key to the RecentlyAddedGameListScreen
+              numGames: 5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
+
+// basic GameListScreen, use this to build specific ones
 
 class GameListScreen extends StatelessWidget {
   const GameListScreen({super.key});
@@ -161,6 +191,88 @@ class GameListScreen extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+class RecentlyAddedGameListScreen extends StatefulWidget {
+  
+  final int numGames;
+  const RecentlyAddedGameListScreen({super.key, this.numGames = 5});
+
+  @override
+  RecentlyAddedGameListScreenState createState() => RecentlyAddedGameListScreenState();
+}
+
+class RecentlyAddedGameListScreenState extends State<RecentlyAddedGameListScreen> {
+  
+  late AddedManager recentlyAddedManager;
+
+  @override
+  void initState() {
+    super.initState();
+    recentlyAddedManager = AddedManager(recentlyAddedLimit: widget.numGames);
+  }
+
+
+  void refresh() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    DatabaseHelper().database.then((db) {
+      print('Database should be initialized');
+    }).catchError((error) {
+      print('Failed to initialize database: $error');
+    });
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Recently Added Games'),
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getRecentlyAddedGames(), 
+      builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No recently added games'));
+          } else {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                var game = snapshot.data![index];
+                return GameInstance(
+                  gameId: game['id'].toString(),
+                  gameName: game['name'],
+                  minPlayers: game['min_players'],
+                  maxPlayers: game['max_players'],
+                  minAge: game['min_age'],
+                  maxAge: game['max_age'],
+                  minDuration: game['min_duration'],
+                  maxDuration: game['max_duration'],
+                  publisher: 'unspecified',
+                );
+              },
+            );
+          }
+        },
+      ),
+    );
+  }
+  Future<List<Map<String, dynamic>>> _getRecentlyAddedGames() async {
+  // Fetch all games first
+    List<Map<String, dynamic>> allGames = await DatabaseHelper().getGames();
+
+  // Filter the games asynchronously
+    List<Map<String, dynamic>> recentlyAddedGames = [];
+    for (var game in allGames) {
+      if (await recentlyAddedManager.isRecentlyAdded(game['id'].toString())) {
+       recentlyAddedGames.add(game);
+     }
+    }
+    return recentlyAddedGames;
   }
 }
 
@@ -491,7 +603,7 @@ void _filterGames() {
 
 
 
-class GameInstance extends StatelessWidget {
+class GameInstance extends StatefulWidget {
   final String gameId;
   final String gameName;
   
@@ -514,10 +626,60 @@ class GameInstance extends StatelessWidget {
     this.maxPlayers = 20,
     this.minDuration = 10,
     this.maxDuration = 180,
-    this.publisher = 'Unspecified',
+    this.publisher = 'Unspecified', 
+   
   });
 
+  @override
+  State<GameInstance> createState() => _GameInstanceState();
+}
+
+class _GameInstanceState extends State<GameInstance> {
+  bool _isDeleted = false;
+
+  void _addGameToDatabase() async {
+
+    // Prepare the game data to be inserted into the database
+    Map<String, dynamic> newGame = {
+      'name': widget.gameName,
+      'min_players': widget.minPlayers,
+      'max_players': widget.maxPlayers,
+      'min_age': widget.minAge,
+      'max_age': widget.maxAge,
+      'min_duration': widget.minDuration,
+      'max_duration': widget.maxDuration
+    };
+
+    // Insert the game into the database, add it to recently added games make it a favourite by default
+    DatabaseHelper dbHelper = DatabaseHelper();
+    int newGameId = await dbHelper.insertGame(newGame);
+    print('game should be back in databese');
+    
+    AddedManager recentlyAdded = AddedManager();
+    recentlyAdded.add(newGameId.toString());
+    
+    FavouritesManager favs = FavouritesManager();
+    favs.addFavourite(newGameId.toString());
+
+    //rebuild widget
+    setState(() { _isDeleted = false; });
+  }
   
+  void _removeGameFromDatabase() async {
+    // Remove the game from the database,recently added games and favourites
+    DatabaseHelper dbHelper = DatabaseHelper();
+    dbHelper.deleteGame(int.parse(widget.gameId));
+    
+    AddedManager recentlyAdded = AddedManager();
+    recentlyAdded.removeRecentlyAdded(widget.gameId);
+ 
+    FavouritesManager favs = FavouritesManager();
+    favs.removeFavourite(widget.gameId);
+
+    //rebuild widget here
+    setState(() { _isDeleted = true; });
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -530,18 +692,20 @@ class GameInstance extends StatelessWidget {
         children: [
           Row(
             children: [
-              GameDetails(gameName: gameName),
+              GameDetails(gameName: widget.gameName),
               Spacer(),
-              LikeButton(gameId: gameId)
+              _isDeleted ? IconButton(onPressed: _addGameToDatabase, icon: Icon(Icons.add)) : IconButton(onPressed: _removeGameFromDatabase, icon: Icon(Icons.delete)),
+              SizedBox(width: 10),
+              LikeButton(gameId: widget.gameId)
             ],
           ),
           Row(
             children: [
-              PlayerRangeWidget(minPlayers: minPlayers, maxPlayers: maxPlayers),
+              PlayerRangeWidget(minPlayers: widget.minPlayers, maxPlayers: widget.maxPlayers),
               SizedBox(width: 10),
-              AgeRangeWidget(minAge: minAge, maxAge: maxAge),
+              AgeRangeWidget(minAge: widget.minAge, maxAge: widget.maxAge),
               SizedBox(width: 10),
-              DurationWidget(minDuration: minDuration, maxDuration: maxDuration),
+              DurationWidget(minDuration: widget.minDuration, maxDuration: widget.maxDuration),
               
             ],
           ),
@@ -693,7 +857,9 @@ class _LikeButtonState extends State<LikeButton> {
 }
 
 class AddGameInstance extends StatefulWidget {
-  const AddGameInstance({super.key});
+  final VoidCallback onGameAdded;
+
+  const AddGameInstance({super.key, required this.onGameAdded});
 
   @override
   _AddGameInstanceState createState() => _AddGameInstanceState();
@@ -733,6 +899,7 @@ class _AddGameInstanceState extends State<AddGameInstance> {
 
     // Trigger a rebuild of the widget
     setState(() {});
+
   }
 
   void _addGameToDatabase() async {
@@ -764,19 +931,28 @@ class _AddGameInstanceState extends State<AddGameInstance> {
     Map<String, dynamic> newGame = {
       'name': gameName,
       'min_players': int.tryParse(_minPlayersController.text) ?? 0,
-      'max_players': int.tryParse(_maxPlayersController.text) ?? 0,
+      'max_players': int.tryParse(_maxPlayersController.text) ?? 99,
       'min_age': int.tryParse(_minAgeController.text) ?? 0,
-      'max_age': int.tryParse(_maxAgeController.text) ?? 0,
+      'max_age': int.tryParse(_maxAgeController.text) ?? 99,
       'min_duration': int.tryParse(_minDurationController.text) ?? 0,
-      'max_duration': int.tryParse(_maxDurationController.text) ?? 0,
+      'max_duration': int.tryParse(_maxDurationController.text) ?? 300,
     };
 
-    // Insert the game into the database
+    // Insert the game into the database, add it to recently added games and make it a favourite by default
     DatabaseHelper dbHelper = DatabaseHelper();
-    await dbHelper.insertGame(newGame);
+    int newGameId = await dbHelper.insertGame(newGame);
+    
+    AddedManager recentlyAdded = AddedManager();
+    recentlyAdded.add(newGameId.toString());
+
+    FavouritesManager favs = FavouritesManager();
+    favs.addFavourite(newGameId.toString());
 
     // Reset the form by creating a new AddGameInstance
     _resetForm();
+    // Notify the parent to refresh the recently added games list
+    widget.onGameAdded();
+
   }
 
   @override
@@ -793,9 +969,9 @@ class _AddGameInstanceState extends State<AddGameInstance> {
               children: [
                 Expanded(child: GameDetailsInput(controller: _gameNameController)),
                 Spacer(),
-                ElevatedButton(
+                IconButton(
+                  icon: Icon(Icons.add),
                   onPressed: _addGameToDatabase,
-                  child: Text('Add Game'),
                 ),
               ],
             ),
