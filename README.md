@@ -1,15 +1,9 @@
 # Game Gallery
 
+An app to help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**.
+**Excuse the still very rough UI!**
+
 ## Overview
-
-An app to help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**:
-
-- Add new games.
-- Mark games as favorites.
-- Filter and search games by player count, age, and duration.
-- View recently added games.
-
-## Features
 
 - **Home Tab**: View your favorite games.
 - **Search Tab**: Explore the catalog, filter, and search for games.
@@ -60,6 +54,6 @@ Run the app:
 ```bash
 flutter run
 ```
-**Excuse the still very rough UI!**
+
 
 
