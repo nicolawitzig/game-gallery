@@ -2,7 +2,7 @@
 
 ## Overview
 
-An app help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**:
+An app to help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**:
 
 - Add new games.
 - Mark games as favorites.
