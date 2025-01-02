@@ -1,12 +1,65 @@
-# game-gallery
+# Game Gallery
 
-Overview
-The Board Game Catalog App is a Flutter-based application designed to manage and explore a catalog of board games. It allows users to:
+## Overview
 
-Add new games to the catalog.
-Mark games as favorites for easy access.
-Filter and search games by criteria such as player count, age range, and duration.
-View recently added games in a dedicated section.
-The app is a robust tool for board game enthusiasts to organize and discover games in their collection. It uses a SQLite database for local data storage.
+An app help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**:
+
+- Add new games.
+- Mark games as favorites.
+- Filter and search games by player count, age, and duration.
+- View recently added games.
+
+## Features
+
+- **Home Tab**: View your favorite games.
+- **Search Tab**: Explore the catalog, filter, and search for games.
+- **Add Tab**: Add new games and view recently added ones.
+- **Favorites**: Easily favorite/unfavorite games.
+- **Offline Support**: All data is stored locally using SQLite.
+
+## Requirements
+
+- **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
+- **Device/Emulator**: iOS Simulator, Android Emulator, or a physical device.
+
+## How to Run
+
+### Clone the Repository
+```bash
+git clone https://github.com/your-username/board-game-catalog.git
+cd board-game-catalog
+```
+Install Dependencies
+```bash
+flutter pub get
+```
+### Run the App
+#### iOS Simulator:
+
+Launch the Simulator:
+```bash
+open -a Simulator
+```
+Run the app:
+```bash
+flutter run
+```
+#### Android Emulator:
+
+Launch the Emulator:
+```bash
+flutter emulators --launch <emulator-id>
+```
+Run the app:
+```bash
+flutter run
+```
+#### Physical Device:
+Connect your device via USB.
+Run the app:
+```bash
+flutter run
+```
+**Excuse the still very rough UI!**
 
 
