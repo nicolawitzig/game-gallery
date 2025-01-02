@@ -1,6 +1,7 @@
 # Game Gallery
 
-An app to help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**.
+An app to help you manage your board games collection. Developed for my dear godmother, **Gotti Gabi**.  
+
 **Excuse the still very rough UI!**
 
 ## Overview
